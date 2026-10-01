@@ -115,7 +115,15 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
 .line{display:grid;gap:5px;align-items:center;padding:3px 0;
   grid-template-columns:1fr 94px 28px;
   grid-template-areas:'nm nm x' 'am fq fq';}
-.line>.name{grid-area:nm}
+.line>.name,.line>.nmwrap{grid-area:nm}
+.nmwrap{display:flex;align-items:center;gap:5px;min-width:0}
+.nmwrap>.in{flex:1 1 auto;min-width:0}
+.info{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);
+  background:#fff;color:var(--muted);font-size:12px;font-weight:700;font-style:italic;
+  line-height:1;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.info:hover,.info.on{border-color:var(--teal);color:var(--teal)}
+.infonote{background:#F1F7F5;border-left:3px solid var(--palo);border-radius:0 6px 6px 0;
+  padding:8px 10px;font-size:13px;color:var(--ink);margin:1px 0 6px}
 .line>.money{grid-area:am}
 .line>.freq{grid-area:fq}
 .line>.x{grid-area:x;justify-self:end}

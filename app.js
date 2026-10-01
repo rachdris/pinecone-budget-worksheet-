@@ -61,12 +61,16 @@ const CATALOG = [
     ['Rent','F'], ['Mortgage','F','D'], ['Home or renters insurance','F'],
     ['Electricity','V'], ['Gas and water','V'], ['Phone','F'], ['Internet','F'] ] },
   { id:'transport', name:'Transportation', lines:[
-    ['Car payment','F','D'], ['Car insurance','F'], ['Fuel','V'],
-    ['Transit or parking','V'] ] },
+    ['Car loan payment','F','D'], ['Car lease payment','F'], ['Car insurance','F'],
+    ['Fuel','V'], ['Transit or parking','V'] ] },
   { id:'food', name:'Food', lines:[
     ['Groceries','V'], ['Dining out','V'] ] },
   { id:'debt', name:'Loans and credit', lines:[
-    ['Student loan','F','D'], ['Credit card','F','D'], ['Other loan','F','D'] ] },
+    ['Student loan','F','D'],
+    ['Credit card','F','D', 'Only count a card payment here if you carry a balance. '
+      + 'If you clear it in full each month, that spending is already in the categories '
+      + 'above, and counting it again would double it.'],
+    ['Other loan','F','D'] ] },
   { id:'health', name:'Health and wellness', lines:[
     ['Health insurance','F'], ['Medical and prescriptions','V'], ['Personal care','V'] ] },
   { id:'subs', name:'Subscriptions and memberships', lines:[
@@ -80,7 +84,8 @@ const CATALOG = [
 const mkLine = (label='', t='V', d=false) => ({ label, amount:'', freq:'monthly', t, d });
 const makeGroups = () => CATALOG.map((g) => ({
   id:g.id, name:g.name, open:false,
-  lines:g.lines.map(([label,t,d]) => ({ label, amount:'', freq:'monthly', t, d:d==='D' })),
+  lines:g.lines.map(([label,t,d,info]) => ({ label, amount:'', freq:'monthly', t,
+    d:d==='D', info:info||'' })),
 }));
 
 /* ------------------------------------------------------------------- state */
@@ -88,6 +93,7 @@ const MAX_GOALS = 3;
 const state = {
   goals: [''],                 /* named only; the money for them lives in step 6 */
   openAll: false,
+  openInfo: null,              /* which line's info note is showing */
   income: [ {label:'Main job', amount:'', freq:'biweekly', varies:false, low:'', high:''} ],
   groups: makeGroups(),
   emergency: '',
@@ -190,10 +196,15 @@ function incomeRow(r, i) {
 }
 
 function costLine(l, gi, li) {
+  const key = gi + '-' + li, open = state.openInfo === key;
   return `
     <div class="line">
-      <input class="in name" data-gi="${gi}" data-li="${li}" data-lk="label" type="text"
-             value="${esc(l.label)}" placeholder="What is it?" />
+      <span class="nmwrap">
+        <input class="in name" data-gi="${gi}" data-li="${li}" data-lk="label" type="text"
+               value="${esc(l.label)}" placeholder="What is it?" />
+        ${l.info ? `<button class="info ${open?'on':''}" data-info="${key}"
+          aria-expanded="${open?'true':'false'}" aria-label="About this line">i</button>` : ''}
+      </span>
       <span class="money"><i>$</i><input class="in" data-gi="${gi}" data-li="${li}" data-lk="amount"
         type="text" inputmode="decimal" value="${esc(l.amount)}" /></span>
       <select class="in freq" data-gi="${gi}" data-li="${li}" data-lk="freq"
@@ -201,7 +212,8 @@ function costLine(l, gi, li) {
         ${EXP_FREQS.map((f)=>`<option value="${f.id}" ${l.freq===f.id?'selected':''}>${f.label}</option>`).join('')}
       </select>
       <button class="x" data-lrm="${li}" data-lg="${gi}" aria-label="Remove line">&times;</button>
-    </div>`;
+    </div>
+    ${open ? `<p class="infonote">${esc(l.info)}</p>` : ''}`;
 }
 
 /* Collapsed by default, because at a real lesson-column width the open page is
@@ -355,9 +367,7 @@ function refresh() {
       <div class="b big"><span>A month toward debt</span><b>${usd(dbt)}</b></div>
       ${debtLines().map((l)=>`<div class="b"><span>${esc(l.label)}</span><b>${usd(l.amount)}</b></div>`).join('')}
     </div>
-    <p class="note">${dshare ? `That is <b>${dshare}%</b> of the money coming in. ` : ''}Unlike
-      rent, these have an end date. To clear one faster, raise its amount in step 3: the same
-      money, pointed at the balance instead of the minimum.</p>`
+    ${dshare ? `<p class="note"><b>${dshare}%</b> of income is going toward debt.</p>` : ''}`
     : `<p class="help">No debt payments in the lines above. Add a loan or card payment to the
        category it belongs to and it will show up here.</p>`;
 
@@ -461,11 +471,13 @@ function bind() {
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-iadd],[data-irm],[data-ivar],[data-ladd],[data-lrm],'
-    + '[data-sadd],[data-srm],[data-gladd],[data-glrm],[data-gopen],[data-allcats],#printit');
+    + '[data-sadd],[data-srm],[data-gladd],[data-glrm],[data-gopen],[data-allcats],'
+    + '[data-info],#printit');
   if (!el) return;
   const d = el.dataset;
   if (el.id === 'printit') { window.print(); return; }
-  if (d.gladd) { if (state.goals.length < MAX_GOALS) state.goals.push(''); }
+  if (d.info) { state.openInfo = state.openInfo === d.info ? null : d.info; }
+  else if (d.gladd) { if (state.goals.length < MAX_GOALS) state.goals.push(''); }
   else if (d.glrm !== undefined) {
     state.goals.splice(+d.glrm, 1);
     if (!state.goals.length) state.goals.push('');
