@@ -1,0 +1,233 @@
+/* ============================================================================
+   Pinecone Budget sheet | 02.1 Core Interface palette
+   MOBILE FIRST. One column on a phone (where Mighty opens this full-screen, so
+   length costs nothing); two columns of categories from 900px, because desktop
+   iframes are capped at 2000px and height is the scarce resource there.
+   Inputs are 16px throughout: anything smaller makes iOS Safari zoom on focus.
+   ========================================================================= */
+@font-face { font-family:'Source Sans 3'; font-weight:400 700; font-display:swap;
+  src:url('fonts/SourceSans3-var.woff2') format('woff2'); }
+@font-face { font-family:'Source Serif 4'; font-weight:900; font-display:swap;
+  src:url('fonts/SourceSerif4-900.woff2') format('woff2'); }
+
+:root{
+  color-scheme:only light;
+  --navy:#0D3B4F; --teal:#006F7A; --palo:#1B6D5F; --dark-palo:#014240;
+  --brick:#651C32; --mist:#F4F4F4; --fog:#DAD7CB; --driftwood:#B6B1A9;
+  --ink:#231F20; --muted:#5D6A72; --line:#E3E6E5;
+  --sans:'Source Sans 3',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --serif:'Source Serif 4',Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--mist);color:var(--ink);font:16px/1.45 var(--sans);
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:-.01em}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* --------------------------------------------------------- the one number */
+.bar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff}
+.bar .barin{max-width:1100px;margin:0 auto;padding:9px 16px;display:flex;
+  align-items:center;justify-content:space-between;gap:14px}
+.brand{font-weight:700;font-size:14px;line-height:1.15}
+.brand small{display:block;font-weight:400;font-size:10px;opacity:.7;
+  letter-spacing:.07em;text-transform:uppercase}
+.live{text-align:right;line-height:1.1}
+.live .lab{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.live .num{font-family:var(--serif);font-size:23px;font-weight:900}
+
+/* ------------------------------------------------------------- the sheet */
+.sheet{max-width:1100px;margin:0 auto;padding:14px 12px 40px}
+.sec{background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:13px 13px 14px;margin-bottom:10px}
+.shead{display:grid;grid-template-columns:26px 1fr auto;gap:9px;align-items:center;
+  padding-bottom:9px;margin-bottom:10px;border-bottom:2px solid var(--brick)}
+.snum{width:26px;height:26px;border-radius:50%;background:var(--brick);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;line-height:1}
+.shead h2{font-size:16.5px}
+.stot{font-family:var(--serif);font-size:19px;font-weight:900;color:var(--navy);
+  font-variant-numeric:tabular-nums}
+.stot small{font-family:var(--sans);font-size:11px;font-weight:400;color:var(--muted)}
+.help{font-size:13.5px;color:var(--muted);margin-bottom:10px}
+
+/* ------------------------------------------------------------- the fields */
+.in{font:16px/1.2 var(--sans);color:var(--ink);background:#fff;
+  border:1.5px solid var(--line);border-radius:7px;padding:8px 10px;min-height:40px;width:100%}
+.in:focus{outline:2px solid var(--teal);outline-offset:-1px;border-color:var(--teal)}
+.in.wide{width:100%}
+.money{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:7px;
+  background:#fff;padding-left:9px;min-height:40px}
+.money:focus-within{outline:2px solid var(--teal);outline-offset:-1px;border-color:var(--teal)}
+.money i{font-style:normal;color:var(--muted);font-size:15px}
+.money .in{border:0;outline:0;padding-left:5px;min-height:38px;background:none}
+.money .in:focus{outline:0}
+select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'><path d='M3.5 6L8 10.5 12.5 6' fill='none' stroke='%235D6A72' stroke-width='2' stroke-linecap='round'/></svg>") no-repeat right 8px center;
+  padding-right:19px}
+.x{background:none;border:0;color:var(--driftwood);font-size:21px;line-height:1;
+  padding:0;min-width:28px;min-height:38px}
+.x:hover{color:var(--brick)}
+.add{background:none;border:0;padding:8px 0 2px;color:var(--teal);
+  font-size:13.5px;font-weight:600;min-height:36px}
+.add:hover{text-decoration:underline}
+
+/* income rows carry more controls, so they stack more generously */
+/* On a phone an income row stacks, but the remove button belongs beside the
+   name. On its own line it floats in the middle of nowhere. */
+.irow{display:grid;grid-template-columns:1fr 28px;gap:7px;padding:11px 0;
+  border-bottom:1px solid var(--line)}
+.irow>*{grid-column:1 / -1}
+.irow>.name{grid-column:1;grid-row:1}
+.irow>.x{grid-column:2;grid-row:1;justify-self:end}
+.irow>span:empty{display:none}
+.irow:last-of-type{border-bottom:0}
+.irow .mo{font-size:13.5px;font-weight:700;color:var(--palo);
+  font-variant-numeric:tabular-nums}
+.irow .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.mini .money{margin-top:4px}
+.vary{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;color:var(--muted)}
+.vary input{width:19px;height:19px;accent-color:var(--palo)}
+
+/* --------------------------------------------------- the cost line items */
+.cats{display:grid;gap:12px}
+.cat{border:1px solid var(--line);border-radius:9px;background:#FCFDFD;overflow:hidden}
+/* the whole closed row is the hit target, and it carries the total so the
+   collapsed state reads as a summary rather than a filing cabinet */
+.cathead{display:grid;grid-template-columns:1fr auto auto 18px;gap:9px;align-items:center;
+  width:100%;background:none;border:0;text-align:left;padding:10px 11px;min-height:46px}
+.cat.open .cathead{border-bottom:1px solid var(--line)}
+.cathead:hover h3{color:var(--teal)}
+.cathead h3{font-size:14.5px;color:var(--navy)}
+.catmeta{font-size:12.5px;color:var(--muted)}
+.cattot{font-family:var(--serif);font-size:15.5px;font-weight:900;color:var(--navy);
+  font-variant-numeric:tabular-nums}
+.chev{color:var(--muted);display:block;justify-self:end;transition:transform .15s}
+.cat.open .chev{transform:rotate(180deg);color:var(--palo)}
+.catbody{padding:4px 10px 7px}
+.allcats{margin:0 0 8px}
+
+/* step 1 goal rows */
+.goal{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.goal>.in{flex:1 1 auto;min-width:0}
+
+.line{display:grid;gap:5px;align-items:center;padding:3px 0;
+  grid-template-columns:1fr 94px 28px;
+  grid-template-areas:'nm nm x' 'am fq fq';}
+.line>.name{grid-area:nm}
+.line>.money{grid-area:am}
+.line>.freq{grid-area:fq}
+.line>.x{grid-area:x;justify-self:end}
+.line .freq{min-height:40px}
+.line .flat{display:flex;align-items:center;font-size:14px;color:var(--muted)}
+.line .name.flat{font-size:15px;color:var(--ink);font-weight:600}
+.line.solo{grid-template-columns:1fr 120px 44px;grid-template-areas:'nm am fq';
+  padding:4px 0}
+.line.solo>.x{display:none}
+
+.split{font-size:13.5px;color:var(--muted);margin-top:11px}
+.split b{color:var(--ink)}
+
+/* ------------------------------------------------------------ debt, notes */
+.note{background:#F1F7F5;border-left:3px solid var(--palo);border-radius:0 6px 6px 0;
+  padding:9px 11px;font-size:13.5px;color:var(--ink);margin-top:9px}
+.dlist{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.d{display:flex;justify-content:space-between;gap:12px;padding:9px 11px;font-size:14.5px;
+  border-bottom:1px solid var(--line)}
+.d:last-child{border-bottom:0}
+.d b{font-variant-numeric:tabular-nums}
+.d.tot{background:#F7F9F9;font-weight:700}
+.d.col{display:block}
+.d.col b{display:block;font-size:14.5px}
+.d.col span{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.lab{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--teal);margin:14px 0 7px}
+.lab.first{margin-top:0}
+.goallist{display:grid;gap:6px;margin-bottom:14px}
+.goallist li{display:grid;grid-template-columns:7px 1fr;gap:10px;align-items:start;font-size:15px}
+.goallist li::before{content:'';width:7px;height:7px;border-radius:50%;
+  background:var(--palo);margin-top:7px}
+
+/* ------------------------------------------------------------- the bottom */
+.bbox{border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.b{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;font-size:15px;
+  border-bottom:1px solid var(--line)}
+.b b{font-variant-numeric:tabular-nums}
+.b.big{background:var(--navy);color:#fff;border-bottom:0;align-items:center}
+.b.big span{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.b.big b{font-family:var(--serif);font-size:26px;font-weight:900}
+.acts{margin-top:14px}
+.btn{background:var(--palo);color:#fff;border:0;border-radius:9px;padding:12px 20px;
+  font-size:15px;font-weight:700;min-height:46px}
+.btn:hover{background:var(--dark-palo)}
+.acts .help{margin:8px 0 0}
+.sec.last{margin-bottom:0}
+
+/* ------------------------------------------------------------ wider screens */
+/* A lesson column is usually narrower than a browser window, so the two-column
+   layout has to start well before "desktop". Height is the scarce resource:
+   Mighty caps a desktop iframe at 2000px. */
+/* The first width where a label and its amount fit on ONE line, which is worth
+   more page height than anything else here. Measured against a real Mighty
+   lesson column: it is ~640px on desktop, NOT the browser width, so this has to
+   trip well below the usual "desktop" breakpoint or the embed gets the phone
+   layout on a laptop. Fixed part of the row is 206px; 560 leaves ~270 for the
+   label, which fits the longest one. */
+@media (min-width:560px){
+  .line{grid-template-columns:1fr 98px 66px 24px;
+    grid-template-areas:'nm am fq x';gap:6px;padding:2px 0}
+  .line.solo{grid-template-columns:1fr 98px 66px 24px;grid-template-areas:'nm am fq x'}
+  /* A plain income row folds to two lines instead of five. Rows with a range
+     ("it varies") keep stacking: they carry two more fields and cramming them
+     costs more legibility than the height is worth. */
+  .irow:not(.v){grid-template-columns:112px 140px 1fr auto;gap:8px;align-items:center}
+  .irow:not(.v)>*{grid-column:auto}
+  .irow:not(.v)>.name{grid-row:1;grid-column:1 / 4}
+  .irow:not(.v)>.x{grid-row:1;grid-column:4;justify-self:end}
+  .irow:not(.v)>.money{grid-row:2;grid-column:1}
+  .irow:not(.v)>.sel{grid-row:2;grid-column:2}
+  .irow:not(.v)>.mo{grid-row:2;grid-column:3;text-align:right}
+  .irow:not(.v)>.vary{grid-row:2;grid-column:4}
+  /* A range row carries two more fields. Folding it into the same single line
+     squeezes the label and clips the frequency menu, so it gets two rows of
+     its own: name on top, then the pair with its controls beside them. */
+  .irow.v{grid-template-columns:1fr 150px auto auto;gap:8px;align-items:end}
+  .irow.v>*{grid-column:auto}
+  .irow.v>.name{grid-row:1;grid-column:1 / 4}
+  .irow.v>.x{grid-row:1;grid-column:4;justify-self:end;align-self:center}
+  .irow.v>.two{grid-row:2;grid-column:1}
+  .irow.v>.sel{grid-row:2;grid-column:2}
+  .irow.v>.mo{grid-row:2;grid-column:3;text-align:right;padding-bottom:11px}
+  .irow.v>.vary{grid-row:2;grid-column:4;padding-bottom:11px}
+}
+@media (min-width:700px){
+  .sheet{padding:16px 18px 44px}
+  .sec{padding:14px 16px 15px}
+  .shead h2{font-size:18px}
+}
+@media (min-width:960px){
+  /* CSS columns, not grid: grid aligns rows, so a short category beside a tall
+     one leaves dead space. Columns pack them and reclaim it. */
+  .cats{display:block;columns:2;column-gap:14px}
+  .cat{break-inside:avoid;margin-bottom:10px}
+  /* steps 4-6 are each short; side by side they read as a worksheet and save
+     roughly 400px, which is most of what stands between us and the 2000px cap */
+  .trio{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:start}
+  .trio .sec{margin-bottom:10px}
+  /* a third of the width is not enough for label + amount + unit on one line,
+     so saving rows fold back to two inside the trio */
+  .trio .line:not(.solo){grid-template-columns:1fr 46px 24px;
+    grid-template-areas:'nm nm x' 'am fq fq'}
+}
+
+@media print{
+  .bar,.add,.x,.btn,.acts .help,select.in{display:none !important}
+  body{background:#fff}
+  .sheet{max-width:none;padding:0}
+  .sec{border:0;padding:0 0 14px;margin:0;break-inside:avoid}
+  .cat,.dlist,.bbox,.line{break-inside:avoid}
+  .shead{break-after:avoid}
+  .snum,.b.big{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .cats{grid-template-columns:1fr 1fr}
+}
