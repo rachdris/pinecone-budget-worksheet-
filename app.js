@@ -142,8 +142,8 @@ const debtLines = () => {
 };
 const debtTotal  = () => debtLines().reduce((t,l) => t + l.amount, 0);
 const savingList = () => state.saving.filter((r) => num(r.amount));
-const savingTotal = () => num(state.emergency)
-  + state.saving.reduce((t,r) => t + num(r.amount), 0);
+const furtherTotal = () => state.saving.reduce((t,r) => t + num(r.amount), 0);
+const savingTotal  = () => num(state.emergency) + furtherTotal();
 const outTotal = () => expTotal();
 const left = () => incomeTotals().plan - outTotal() - savingTotal();
 
@@ -295,7 +295,7 @@ function render() {
     </section>
 
     <section class="sec">
-      ${stepHead(5)}
+      ${stepHead(5, 'tot-emergency')}
       <p class="help">Treat building an emergency fund as a mandatory expense.</p>
       <div class="line solo">
         <span class="name flat">Emergency saving</span>
@@ -309,7 +309,7 @@ function render() {
 
     <section class="sec">
       ${stepHead(6, 'tot-saving')}
-      <p class="help">What are you saving for beyond the emergency fund? Retirement, a down
+      <p class="help">Longer-term saving, beyond the emergency fund. Retirement, a down
         payment, a car, a move.</p>
       ${state.saving.map(savingRow).join('')}
       <button class="add" data-sadd="1">+ add a line</button>
@@ -337,7 +337,9 @@ function refresh() {
     const el = $('tot-'+g.id); if (el) el.textContent = groupTotal(g) ? usd(groupTotal(g)) : '';
   });
   $('tot-exp').innerHTML = expTotal() ? usd(expTotal())+'<small>/mo</small>' : '';
-  $('tot-saving').innerHTML = savingTotal() ? usd(savingTotal())+'<small>/mo</small>' : '';
+  $('tot-emergency').innerHTML = num(state.emergency)
+    ? usd(num(state.emergency))+'<small>/mo</small>' : '';
+  $('tot-saving').innerHTML = furtherTotal() ? usd(furtherTotal())+'<small>/mo</small>' : '';
 
   $('split').innerHTML = expTotal()
     ? `Of that, <b>${usd(sp.fixed)}</b> is fixed and <b>${usd(sp.varies)}</b> varies. The
@@ -352,9 +354,9 @@ function refresh() {
   $('incnotes').innerHTML = notes.map((n)=>`<p class="note">${n}</p>`).join('');
 
   $('emscale').innerHTML = expTotal()
-    ? `A common rule of thumb is three to six months of expenses. On the costs above that is
-       <b>${usd(expTotal()*3)}</b> to <b>${usd(expTotal()*6)}</b>. If that feels out of reach,
-       a smaller amount still covers the small shocks that would otherwise go on a card.` : '';
+    ? `A common rule of thumb is to have saved three to six months of living expenses. Based
+       on the costs above, that is <b>${usd(expTotal()*3)}</b> to <b>${usd(expTotal()*6)}</b>.`
+    : '';
 
   /* No input here. With three debts, one "pay extra" box has no answer to
      "extra toward which one", and the natural move is to raise that line in
@@ -376,6 +378,10 @@ function refresh() {
   const liveOn = !!(t.plan || expTotal());
   $('livelab').textContent = liveOn ? pos.label : '';
   $('livenum').textContent = liveOn ? usd(Math.abs(left())) : '';
+  /* the number itself changes colour when it crosses zero, so the state is
+     visible without reading the label. Amber, not red: a budget that does not
+     balance on the first pass is an ordinary outcome, not an error. */
+  document.querySelector('.live').classList.toggle('over', liveOn && left() < 0);
 
 }
 
@@ -428,7 +434,7 @@ function bottom(pos) {
   return `
     ${goalList}
     <div class="bbox">${rows}
-      <div class="b big"><span>${pos.label}</span><b>${usd(Math.abs(left()))}</b></div>
+      <div class="b big ${left() < 0 ? 'over' : ''}"><span>${pos.label}</span><b>${usd(Math.abs(left()))}</b></div>
     </div>
     ${say ? `<p class="note">${say}</p>` : ''}
     ${movers}
