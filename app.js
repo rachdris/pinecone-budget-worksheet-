@@ -281,8 +281,7 @@ function render() {
       ${stepHead(3, 'tot-exp')}
       <p class="help">Rent, insurance, and other recurring costs are fixed expenses. Costs
         like groceries, dining out, and entertainment are variable expenses. Reviewing past
-        spending helps estimate these amounts. Saving comes in steps 5 and 6, so leave room
-        for it.</p>
+        spending helps estimate these amounts. Saving comes in steps 5 and 6.</p>
       <button class="add allcats" data-allcats="1">${state.openAll
         ? 'Close all categories' : 'Open all categories'}</button>
       <div class="cats">${state.groups.map(groupCard).join('')}</div>
