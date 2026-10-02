@@ -99,12 +99,11 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
 .cat{border:1px solid var(--line);border-radius:9px;background:#FCFDFD;overflow:hidden}
 /* the whole closed row is the hit target, and it carries the total so the
    collapsed state reads as a summary rather than a filing cabinet */
-.cathead{display:grid;grid-template-columns:1fr auto auto 18px;gap:9px;align-items:center;
+.cathead{display:grid;grid-template-columns:1fr auto 18px;gap:9px;align-items:center;
   width:100%;background:none;border:0;text-align:left;padding:10px 11px;min-height:46px}
 .cat.open .cathead{border-bottom:1px solid var(--line)}
 .cathead:hover h3{color:var(--teal)}
 .cathead h3{font-size:15.5px;color:var(--navy)}
-.catmeta{font-size:13.5px;color:var(--muted)}
 .cattot{font-family:var(--serif);font-size:15.5px;font-weight:900;color:var(--navy);
   font-variant-numeric:tabular-nums}
 .chev{color:var(--muted);display:block;justify-self:end;transition:transform .15s}
@@ -146,7 +145,22 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
   padding:4px 0}
 .line.solo>.x{display:none}
 
-.split{font-size:15px;color:var(--muted);margin-top:11px}
+/* The two figures are the control: tap one to mark those lines. */
+.split{font-size:15px;color:var(--muted);display:flex;align-items:baseline;
+  gap:10px;flex-wrap:wrap}
+.pick{background:none;border:1.5px solid var(--line);border-radius:999px;
+  padding:6px 13px;font-size:14.5px;color:var(--muted);min-height:38px}
+.pick:hover{border-color:var(--palo);color:var(--palo)}
+.pick.on{border-color:var(--palo);background:#EAF3F1;color:var(--palo)}
+.pick.on b{color:var(--dark-palo)}
+.split .hint{font-size:13px;color:var(--driftwood)}
+/* Marked rows get a tint only, no colour coding: fixed and variable are not
+   good and bad, and amber is spoken for by the over-budget cue. */
+.line.hl{background:#EAF3F1;border-radius:6px;margin-left:-6px;margin-right:-6px;
+  padding-left:6px;padding-right:6px}
+.catfoot{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  flex-wrap:wrap;margin-top:11px}
+.catfoot .add{padding:0;min-height:0}
 .split b{color:var(--ink)}
 
 /* ------------------------------------------------------------ debt, notes */

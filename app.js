@@ -94,14 +94,14 @@ const MAX_GOALS = 3;
 /* Offered, never pre-filled. A blank field with a suggestion already in it is a
    suggestion you have to delete. */
 const GOAL_IDEAS = [
-  'Pay off my credit card', 'Save for a car', 'Build up six months of expenses',
-  'Feel in control of my money', 'Stop borrowing from family', 'Save for a move',
-  'Increase my net worth',
+  'Pay off my credit card', 'Save for a car', 'Build an emergency fund',
+  'Feel in control of my money', 'Save for retirement', 'Increase my net worth',
 ];
 const state = {
   goals: [''],                 /* named only; the money for them lives in step 6 */
   openAll: false,
   openInfo: null,              /* which line's info note is showing */
+  highlight: null,             /* 'F' or 'V': show me which lines these are */
   showIdeas: false,
   income: [ {label:'Main job', amount:'', freq:'biweekly', varies:false, low:'', high:''} ],
   groups: makeGroups(),
@@ -142,10 +142,14 @@ function expSplit() {
   }));
   return { fixed, varies };
 }
+/* A line counts as debt if the catalog flagged it (Mortgage, Car loan) OR it
+   sits in Loans and credit. Otherwise a row the user adds there, like
+   "medical debt", silently fails to reach step 4. */
+const isDebt = (g, l) => l.d || g.id === 'debt';
 const debtLines = () => {
   const out = [];
   state.groups.forEach((g) => g.lines.forEach((l) => {
-    if (l.d && lineMonthly(l)) out.push({ label:l.label, amount:lineMonthly(l) });
+    if (isDebt(g, l) && lineMonthly(l)) out.push({ label:l.label, amount:lineMonthly(l) });
   }));
   return out;
 };
@@ -206,8 +210,9 @@ function incomeRow(r, i) {
 
 function costLine(l, gi, li) {
   const key = gi + '-' + li, open = state.openInfo === key;
+  const lit = state.highlight && l.t === state.highlight && lineMonthly(l);
   return `
-    <div class="line">
+    <div class="line ${lit ? 'hl' : ''}">
       <span class="nmwrap">
         <input class="in name" data-gi="${gi}" data-li="${li}" data-lk="label" type="text"
                value="${esc(l.label)}" placeholder="What is it?" />
@@ -231,12 +236,10 @@ function costLine(l, gi, li) {
    cabinet of empty labels. */
 function groupCard(g, gi) {
   const tot = groupTotal(g);
-  const filled = g.lines.filter((l) => num(l.amount)).length;
   return `
     <section class="cat ${g.open?'open':''}">
       <button class="cathead" data-gopen="${gi}" aria-expanded="${g.open?'true':'false'}">
         <h3>${esc(g.name)}</h3>
-        <span class="catmeta">${filled?`${filled} line${filled>1?'s':''}`:''}</span>
         <span class="cattot" id="tot-${g.id}">${tot?usd(tot):''}</span>
         <svg class="chev" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"
           focusable="false"><path d="M3.5 6L8 10.5 12.5 6" fill="none" stroke="currentColor"
@@ -257,7 +260,7 @@ function savingRow(r, i) {
       <span class="money"><i>$</i><input class="in" data-si="${i}" data-sk="amount"
         type="text" inputmode="decimal" value="${esc(r.amount)}" /></span>
       <span class="freq flat">/mo</span>
-      ${state.saving.length>1?`<button class="x" data-srm="${i}" aria-label="Remove row">&times;</button>`:'<span></span>'}
+      <button class="x" data-srm="${i}" aria-label="Remove row">&times;</button>
     </div>`;
 }
 
@@ -278,7 +281,7 @@ function render() {
         <button class="add" data-ideas="1">${state.showIdeas?'Hide ideas':'Need ideas?'}</button>
       </div>
       ${state.showIdeas ? `<div class="ideas">
-        <p class="lab first">Tap one to start from it</p>
+        <p class="lab first">Tap to add a goal</p>
         <div class="chips">${GOAL_IDEAS.map((t,k) => {
           const full = state.goals.length>=MAX_GOALS && state.goals.every((g)=>g.trim());
           return `<button class="chip" ${full?'disabled':''} data-ex="${k}">${esc(t)}</button>`;
@@ -288,8 +291,8 @@ function render() {
     <section class="sec">
       ${stepHead(2, 'tot-income')}
       <p class="help">Take-home, not salary. Enter what actually reaches your account after
-        taxes and deductions. Include income from all sources: salary, side work, investment
-        income.</p>
+        taxes and deductions. Include income from all sources such as salary, side work,
+        investment income, etc.</p>
       ${state.income.map(incomeRow).join('')}
       <button class="add" data-iadd="1">+ add a source</button>
       <div id="incnotes"></div>
@@ -303,7 +306,11 @@ function render() {
       <button class="add allcats" data-allcats="1">${state.openAll
         ? 'Close all categories' : 'Open all categories'}</button>
       <div class="cats">${state.groups.map(groupCard).join('')}</div>
-      <p class="split" id="split"></p>
+      <div class="catfoot">
+        <p class="split" id="split"></p>
+        ${state.groups.some((g) => g.open)
+          ? '<button class="add" data-closeall="1">Collapse all categories</button>' : ''}
+      </div>
     </section>
 
     <div class="trio">
@@ -327,8 +334,18 @@ function render() {
 
     <section class="sec">
       ${stepHead(6, 'tot-saving')}
-      <p class="help">Longer-term saving, beyond the emergency fund. Retirement, a down
-        payment, a car, a move.</p>
+      <p class="help">Saving beyond the emergency fund. Retirement, a down payment, a car,
+        etc.</p>
+      ${(() => {
+        const used = state.saving.map((r) => r.label.trim().toLowerCase());
+        const spare = state.goals.map((g) => g.trim())
+          .filter((g) => g && !used.includes(g.toLowerCase()));
+        return spare.length ? `<div class="ideas">
+          <p class="lab first">Add one of your goals</p>
+          <div class="chips">${spare.map((g) =>
+            `<button class="chip" data-goalpick="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+        </div>` : '';
+      })()}
       ${state.saving.map(savingRow).join('')}
       <button class="add" data-sadd="1">+ add a line</button>
     </section>
@@ -359,9 +376,17 @@ function refresh() {
     ? usd(num(state.emergency))+'<small>/mo</small>' : '';
   $('tot-saving').innerHTML = furtherTotal() ? usd(furtherTotal())+'<small>/mo</small>' : '';
 
-  $('split').innerHTML = expTotal()
-    ? `Of that, <b>${usd(sp.fixed)}</b> is fixed and <b>${usd(sp.varies)}</b> varies. The
-       variable part is where a budget has give in it.` : '';
+  /* The sheet never asks which costs are fixed, so a user can finish without
+     ever learning the distinction that names this step. Tapping a figure shows
+     them, which teaches it without turning it into a question. */
+  const hl = state.highlight;
+  $('split').innerHTML = expTotal() ? `
+    <button class="pick ${hl==='F'?'on':''}" data-hl="F" aria-pressed="${hl==='F'}"
+      >Fixed: <b>${usd(sp.fixed)}</b></button>
+    <button class="pick ${hl==='V'?'on':''}" data-hl="V" aria-pressed="${hl==='V'}"
+      >Variable: <b>${usd(sp.varies)}</b></button>
+    ${hl ? '<span class="hint">tap again to clear</span>'
+         : '<span class="hint">tap one to see which lines</span>'}` : '';
 
   const notes = [];
   if (t.anyYearly) notes.push(`A once-a-year amount is spread across twelve months here. It
@@ -428,26 +453,10 @@ function bottom(pos) {
   /* Only say something when the number alone does not. When the budget simply
      balances, restating it under the panel is the same fact twice. */
   const say = pos.state === 'short'
-    ? `The costs above come to ${usd(-pos.before)} more than your income, before any saving.
-       Saving lines will not change that number; the income and expense lines will.`
+    ? `Your costs come to ${usd(-pos.before)} more than your income, before any saving.`
     : pos.state === 'overcommitted'
-      ? `Costs leave ${usd(pos.before)} a month and ${usd(savingTotal())} is assigned,
-         which is ${usd(-pos.l)} more than there is.`
+      ? `After expenses there is ${usd(pos.before)} remaining a month.`
       : '';
-
-  const movers = left() >= 0 ? '' : `
-    <p class="lab">Where the number can move</p>
-    <div class="dlist">
-      ${[
-        expSplit().varies ? ['Variable spending',
-          `${usd(expSplit().varies)} a month, against ${usd(expSplit().fixed)} that is fixed.`] : null,
-        savingTotal() ? ['What you assigned to saving',
-          `${usd(savingTotal())} a month across emergency and further saving.`] : null,
-        ['Recurring costs', 'Plans, bills and subscriptions renew until you change them.'],
-        ['Income and support', 'Work, benefits and assistance change the other side.'],
-      ].filter(Boolean).map(([h,d]) =>
-        `<div class="d col"><b>${h}</b><span>${d}</span></div>`).join('')}
-    </div>`;
 
   return `
     ${goalList}
@@ -455,7 +464,6 @@ function bottom(pos) {
       <div class="b big ${left() < 0 ? 'over' : ''}"><span>${pos.label}</span><b>${usd(Math.abs(left()))}</b></div>
     </div>
     ${say ? `<p class="note">${say}</p>` : ''}
-    ${movers}
     <div class="acts">
       <div class="actrow">
         <button class="btn" id="csvit">Download my budget</button>
@@ -476,6 +484,22 @@ const csvCell = (v) => {
   return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
 };
 const round2 = (n) => Math.round(n * 100) / 100;
+
+/* Every prefilled label is sentence case, so a typed one should be too. Only
+   the first letter, and only when the second is not already a capital, which
+   leaves iPhone and eBay alone. */
+function sentenceCase(v) {
+  const t = String(v);
+  if (!/^[a-z]/.test(t)) return t;
+  if (/^[a-z][A-Z]/.test(t)) return t;
+  return t[0].toUpperCase() + t.slice(1);
+}
+function capOnBlur(el, write) {
+  el.addEventListener('blur', () => {
+    const fixed = sentenceCase(el.value);
+    if (fixed !== el.value) { el.value = fixed; write(fixed); refresh(); }
+  });
+}
 
 function asCsv() {
   const t = incomeTotals(), sp = expSplit(), pos = position(), dbt = debtTotal();
@@ -544,6 +568,7 @@ function downloadCsv() {
 function bind() {
   document.querySelectorAll('[data-gl]').forEach((el) => {
     el.addEventListener('input', () => { state.goals[+el.dataset.gl] = el.value; });
+    capOnBlur(el, (v) => { state.goals[+el.dataset.gl] = v; });
   });
 
   document.querySelectorAll('[data-ii]').forEach((el) => {
@@ -554,15 +579,18 @@ function bind() {
       if (k === 'freq') return render();            /* the slow/good nouns change */
       refresh();
     });
+    if (k === 'label') capOnBlur(el, (v) => { state.income[i][k] = v; });
   });
   document.querySelectorAll('[data-gi]').forEach((el) => {
     const gi = +el.dataset.gi, li = +el.dataset.li, k = el.dataset.lk;
     const ev = el.tagName === 'SELECT' ? 'change' : 'input';
     el.addEventListener(ev, () => { state.groups[gi].lines[li][k] = el.value; refresh(); });
+    if (k === 'label') capOnBlur(el, (v) => { state.groups[gi].lines[li][k] = v; });
   });
   document.querySelectorAll('[data-si]').forEach((el) => {
     const i = +el.dataset.si;
     el.addEventListener('input', () => { state.saving[i][el.dataset.sk] = el.value; refresh(); });
+    if (el.dataset.sk === 'label') capOnBlur(el, (v) => { state.saving[i].label = v; });
   });
   const em = $('emergency');
   em.addEventListener('input', () => { state.emergency = em.value; refresh(); });
@@ -571,7 +599,8 @@ function bind() {
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-iadd],[data-irm],[data-ivar],[data-ladd],[data-lrm],'
     + '[data-sadd],[data-srm],[data-gladd],[data-glrm],[data-gopen],[data-allcats],'
-    + '[data-info],[data-ideas],[data-ex],#printit,#csvit');
+    + '[data-info],[data-ideas],[data-ex],[data-closeall],[data-goalpick],[data-hl],'
+    + '#printit,#csvit');
   if (!el) return;
   const d = el.dataset;
   if (el.id === 'printit') { window.print(); return; }
@@ -593,13 +622,34 @@ document.addEventListener('click', (e) => {
     state.openAll = !state.openAll;
     state.groups.forEach((g) => { g.open = state.openAll; });
   }
+  else if (d.hl) {
+    state.highlight = state.highlight === d.hl ? null : d.hl;
+    /* no point marking lines inside a closed card */
+    if (state.highlight) { state.openAll = true; state.groups.forEach((g) => { g.open = true; }); }
+  }
+  else if (d.goalpick) {
+    const blank = state.saving.find((r) => !r.label.trim() && !num(r.amount));
+    if (blank) blank.label = d.goalpick;
+    else state.saving.push({ label: d.goalpick, amount: '' });
+  }
+  else if (d.closeall) {
+    state.openAll = false;
+    state.groups.forEach((g) => { g.open = false; });
+  }
   else if (d.iadd) state.income.push({label:'',amount:'',freq:'monthly',varies:false,low:'',high:''});
   else if (d.irm !== undefined) state.income.splice(+d.irm, 1);
   else if (d.ivar !== undefined) state.income[+d.ivar].varies = !state.income[+d.ivar].varies;
-  else if (d.ladd !== undefined) state.groups[+d.ladd].lines.push(mkLine());
+  else if (d.ladd !== undefined) {
+    const g = state.groups[+d.ladd];
+    /* a new row under Loans and credit is a fixed debt payment by default */
+    g.lines.push(g.id === 'debt' ? mkLine('', 'F', true) : mkLine());
+  }
   else if (d.lrm !== undefined) state.groups[+d.lg].lines.splice(+d.lrm, 1);
   else if (d.sadd) state.saving.push({label:'',amount:''});
-  else if (d.srm !== undefined) state.saving.splice(+d.srm, 1);
+  else if (d.srm !== undefined) {
+    state.saving.splice(+d.srm, 1);
+    if (!state.saving.length) state.saving.push({ label:'', amount:'' });
+  }
   render();
 });
 
