@@ -44,10 +44,11 @@ const freqBy = (id) => FREQS.find((f) => f.id === id) || FREQS[3];
 
 /* ---------------------------------------------------------------- expenses */
 const EXP_FREQS = [
-  { id:'monthly',   label:'/mo',   per:1 },
-  { id:'quarterly', label:'/qtr',  per:1/3 },
-  { id:'halfyear',  label:'/6mo',  per:1/6 },
-  { id:'yearly',    label:'/yr',   per:1/12 },
+  /* `label` is the compact form on the line, `long` is for prose and the copy */
+  { id:'monthly',   label:'/mo',   long:'a month',        per:1 },
+  { id:'quarterly', label:'/qtr',  long:'every 3 months', per:1/3 },
+  { id:'halfyear',  label:'/6mo',  long:'every 6 months', per:1/6 },
+  { id:'yearly',    label:'/yr',   long:'a year',         per:1/12 },
 ];
 const expFreqBy = (id) => EXP_FREQS.find((f) => f.id === id) || EXP_FREQS[0];
 
@@ -59,7 +60,7 @@ const expFreqBy = (id) => EXP_FREQS.find((f) => f.id === id) || EXP_FREQS[0];
 const CATALOG = [
   { id:'housing', name:'Housing and utilities', lines:[
     ['Rent','F'], ['Mortgage','F','D'], ['Home or renters insurance','F'],
-    ['Electricity','V'], ['Gas and water','V'], ['Phone','F'], ['Internet','F'] ] },
+    ['Utilities','V'], ['Phone','F'], ['Internet','F'] ] },
   { id:'transport', name:'Transportation', lines:[
     ['Car loan payment','F','D'], ['Car lease payment','F'], ['Car insurance','F'],
     ['Fuel','V'], ['Transit or parking','V'] ] },
@@ -72,7 +73,7 @@ const CATALOG = [
       + 'above, and counting it again would double it.'],
     ['Other loan','F','D'] ] },
   { id:'health', name:'Health and wellness', lines:[
-    ['Health insurance','F'], ['Medical and prescriptions','V'], ['Personal care','V'] ] },
+    ['Medical and prescriptions','V'], ['Personal care','V'] ] },
   { id:'subs', name:'Subscriptions and memberships', lines:[
     ['Streaming and apps','F'], ['Gym or memberships','F'] ] },
   { id:'fun', name:'Personal and fun', lines:[
@@ -90,10 +91,18 @@ const makeGroups = () => CATALOG.map((g) => ({
 
 /* ------------------------------------------------------------------- state */
 const MAX_GOALS = 3;
+/* Offered, never pre-filled. A blank field with a suggestion already in it is a
+   suggestion you have to delete. */
+const GOAL_IDEAS = [
+  'Pay off my credit card', 'Save for a car', 'Build up six months of expenses',
+  'Feel in control of my money', 'Stop borrowing from family', 'Save for a move',
+  'Increase my net worth',
+];
 const state = {
   goals: [''],                 /* named only; the money for them lives in step 6 */
   openAll: false,
   openInfo: null,              /* which line's info note is showing */
+  showIdeas: false,
   income: [ {label:'Main job', amount:'', freq:'biweekly', varies:false, low:'', high:''} ],
   groups: makeGroups(),
   emergency: '',
@@ -263,8 +272,17 @@ function render() {
           <input class="in" data-gl="${i}" type="text" value="${esc(g)}" />
           ${state.goals.length>1?`<button class="x" data-glrm="${i}" aria-label="Remove goal">&times;</button>`:''}
         </div>`).join('')}
-      ${state.goals.length<MAX_GOALS
-        ? '<button class="add" data-gladd="1">+ add a goal</button>' : ''}
+      <div class="rowbtns">
+        ${state.goals.length<MAX_GOALS
+          ? '<button class="add" data-gladd="1">+ add a goal</button>' : '<span></span>'}
+        <button class="add" data-ideas="1">${state.showIdeas?'Hide ideas':'Need ideas?'}</button>
+      </div>
+      ${state.showIdeas ? `<div class="ideas">
+        <p class="lab first">Tap one to start from it</p>
+        <div class="chips">${GOAL_IDEAS.map((t,k) => {
+          const full = state.goals.length>=MAX_GOALS && state.goals.every((g)=>g.trim());
+          return `<button class="chip" ${full?'disabled':''} data-ex="${k}">${esc(t)}</button>`;
+        }).join('')}</div></div>` : ''}
     </section>
 
     <section class="sec">
@@ -439,11 +457,87 @@ function bottom(pos) {
     ${say ? `<p class="note">${say}</p>` : ''}
     ${movers}
     <div class="acts">
-      <button class="btn" id="printit">Print or save as PDF</button>
-      <p class="help">Come back to this budget to check your progress and adjust it. A budget
-        should evolve with your life. Nothing here is saved or sent anywhere, so print or save
-        a copy if you want to keep it.</p>
+      <div class="actrow">
+        <button class="btn" id="csvit">Download my budget</button>
+        <button class="btn ghost" id="printit">Save as PDF</button>
+      </div>
+      <p class="help">The download is a spreadsheet, so you can keep editing it next month
+        rather than starting again. Nothing here is saved or sent anywhere, so take a copy
+        if you want one. Come back and adjust it as your life changes.</p>
     </div>`;
+}
+
+/* A spreadsheet, not a document. The point of CSV over a PDF is that the budget
+   stays editable: change a number next month rather than starting again.
+   Raw numbers, no currency symbols or thousands separators, so Excel and Sheets
+   parse them as numbers instead of text. */
+const csvCell = (v) => {
+  const t = String(v ?? '');
+  return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+};
+const round2 = (n) => Math.round(n * 100) / 100;
+
+function asCsv() {
+  const t = incomeTotals(), sp = expSplit(), pos = position(), dbt = debtTotal();
+  const rows = [['Section', 'Category', 'Item', 'Amount entered', 'How often', 'Monthly']];
+  const push = (...r) => rows.push(r);
+
+  state.goals.map((g) => g.trim()).filter(Boolean)
+    .forEach((g) => push('Goals', '', g, '', '', ''));
+
+  state.income.forEach((r) => {
+    if (!incRowMonthly(r)) return;
+    const f = freqBy(r.freq);
+    push('Money in', '', r.label || 'Income',
+      r.varies ? num(r.low) : num(r.amount),
+      f.label + (r.varies ? ' (varies, low end)' : ''), round2(incRowMonthly(r)));
+  });
+  push('Money in', '', 'Total in', '', '', round2(t.plan));
+
+  state.groups.forEach((g) => {
+    g.lines.forEach((l) => {
+      if (!lineMonthly(l)) return;
+      push('Money out', g.name, l.label, num(l.amount),
+        expFreqBy(l.freq).long, round2(lineMonthly(l)));
+    });
+    if (groupTotal(g)) push('Money out', g.name, 'Subtotal', '', '', round2(groupTotal(g)));
+  });
+  push('Money out', '', 'Total out', '', '', round2(expTotal()));
+  push('Money out', '', 'Of which fixed', '', '', round2(sp.fixed));
+  push('Money out', '', 'Of which variable', '', '', round2(sp.varies));
+
+  debtLines().forEach((l) => push('Debt payments', '', l.label, '', '', round2(l.amount)));
+  if (dbt) {
+    push('Debt payments', '', 'Total debt payments', '', '', round2(dbt));
+    if (t.plan) push('Debt payments', '', 'Share of income', '', '',
+      Math.round((dbt / t.plan) * 100) + '%');
+  }
+
+  if (num(state.emergency)) push('Saving', '', 'Emergency saving', '', '', round2(num(state.emergency)));
+  state.saving.forEach((r) => {
+    if (num(r.amount)) push('Saving', '', r.label || 'Saving', '', '', round2(num(r.amount)));
+  });
+  if (savingTotal()) push('Saving', '', 'Total saving', '', '', round2(savingTotal()));
+
+  push('Summary', '', pos.label, '', '', round2(left()));
+
+  return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+}
+
+function downloadCsv() {
+  const d = new Date();
+  const name = 'pinecone-budget-' + d.toISOString().slice(0, 10) + '.csv';
+  /* the BOM makes Excel open UTF-8 correctly instead of mangling it */
+  const blob = new Blob(['\uFEFF' + asCsv()], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 /* ----------------------------------------------------------------- wiring */
@@ -477,11 +571,18 @@ function bind() {
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-iadd],[data-irm],[data-ivar],[data-ladd],[data-lrm],'
     + '[data-sadd],[data-srm],[data-gladd],[data-glrm],[data-gopen],[data-allcats],'
-    + '[data-info],#printit');
+    + '[data-info],[data-ideas],[data-ex],#printit,#csvit');
   if (!el) return;
   const d = el.dataset;
   if (el.id === 'printit') { window.print(); return; }
+  if (el.id === 'csvit') { downloadCsv(); return; }
   if (d.info) { state.openInfo = state.openInfo === d.info ? null : d.info; }
+  else if (d.ideas) { state.showIdeas = !state.showIdeas; }
+  else if (d.ex !== undefined) {
+    let i = state.goals.findIndex((g) => !g.trim());
+    if (i === -1 && state.goals.length < MAX_GOALS) { state.goals.push(''); i = state.goals.length-1; }
+    if (i !== -1) state.goals[i] = GOAL_IDEAS[+d.ex];
+  }
   else if (d.gladd) { if (state.goals.length < MAX_GOALS) state.goals.push(''); }
   else if (d.glrm !== undefined) {
     state.goals.splice(+d.glrm, 1);
