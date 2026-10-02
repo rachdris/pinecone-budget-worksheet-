@@ -36,7 +36,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .brand small{display:block;font-weight:400;font-size:10px;opacity:.7;
   letter-spacing:.07em;text-transform:uppercase}
 .live{text-align:right;line-height:1.1}
-.live .lab{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.live .lab{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
 .live .num{font-family:var(--serif);font-size:23px;font-weight:900}
 .live.over .num,.live.over .lab{color:var(--ochre)}
 .live.over .lab{opacity:1}
@@ -53,8 +53,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .shead h2{font-size:16.5px}
 .stot{font-family:var(--serif);font-size:19px;font-weight:900;color:var(--navy);
   font-variant-numeric:tabular-nums}
-.stot small{font-family:var(--sans);font-size:11px;font-weight:400;color:var(--muted)}
-.help{font-size:13.5px;color:var(--muted);margin-bottom:10px}
+.stot small{font-family:var(--sans);font-size:12px;font-weight:400;color:var(--muted)}
+.help{font-size:15px;color:var(--muted);margin-bottom:10px}
 
 /* ------------------------------------------------------------- the fields */
 .in{font:16px/1.2 var(--sans);color:var(--ink);background:#fff;
@@ -73,7 +73,7 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
   padding:0;min-width:28px;min-height:38px}
 .x:hover{color:var(--brick)}
 .add{background:none;border:0;padding:8px 0 2px;color:var(--teal);
-  font-size:13.5px;font-weight:600;min-height:36px}
+  font-size:15px;font-weight:600;min-height:36px}
 .add:hover{text-decoration:underline}
 
 /* income rows carry more controls, so they stack more generously */
@@ -86,12 +86,12 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
 .irow>.x{grid-column:2;grid-row:1;justify-self:end}
 .irow>span:empty{display:none}
 .irow:last-of-type{border-bottom:0}
-.irow .mo{font-size:13.5px;font-weight:700;color:var(--palo);
+.irow .mo{font-size:15px;font-weight:700;color:var(--palo);
   font-variant-numeric:tabular-nums}
 .irow .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mini{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.mini{display:block;font-size:13px;font-weight:600;color:var(--muted)}
 .mini .money{margin-top:4px}
-.vary{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;color:var(--muted)}
+.vary{display:inline-flex;align-items:center;gap:7px;font-size:15px;color:var(--muted)}
 .vary input{width:19px;height:19px;accent-color:var(--palo)}
 
 /* --------------------------------------------------- the cost line items */
@@ -103,8 +103,8 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
   width:100%;background:none;border:0;text-align:left;padding:10px 11px;min-height:46px}
 .cat.open .cathead{border-bottom:1px solid var(--line)}
 .cathead:hover h3{color:var(--teal)}
-.cathead h3{font-size:14.5px;color:var(--navy)}
-.catmeta{font-size:12.5px;color:var(--muted)}
+.cathead h3{font-size:15.5px;color:var(--navy)}
+.catmeta{font-size:13.5px;color:var(--muted)}
 .cattot{font-family:var(--serif);font-size:15.5px;font-weight:900;color:var(--navy);
   font-variant-numeric:tabular-nums}
 .chev{color:var(--muted);display:block;justify-self:end;transition:transform .15s}
@@ -123,37 +123,37 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
 .nmwrap{display:flex;align-items:center;gap:5px;min-width:0}
 .nmwrap>.in{flex:1 1 auto;min-width:0}
 .info{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);
-  background:#fff;color:var(--muted);font-size:12px;font-weight:700;font-style:italic;
+  background:#fff;color:var(--muted);font-size:13px;font-weight:700;font-style:italic;
   line-height:1;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .info:hover,.info.on{border-color:var(--teal);color:var(--teal)}
 .infonote{background:#F1F7F5;border-left:3px solid var(--palo);border-radius:0 6px 6px 0;
-  padding:8px 10px;font-size:13px;color:var(--ink);margin:1px 0 6px}
+  padding:8px 10px;font-size:14.5px;color:var(--ink);margin:1px 0 6px}
 .line>.money{grid-area:am}
 .line>.freq{grid-area:fq}
 .line>.x{grid-area:x;justify-self:end}
 .line .freq{min-height:40px}
-.line .flat{display:flex;align-items:center;font-size:14px;color:var(--muted)}
+.line .flat{display:flex;align-items:center;font-size:15px;color:var(--muted)}
 .line .name.flat{font-size:15px;color:var(--ink);font-weight:600}
 .line.solo{grid-template-columns:1fr 120px 44px;grid-template-areas:'nm am fq';
   padding:4px 0}
 .line.solo>.x{display:none}
 
-.split{font-size:13.5px;color:var(--muted);margin-top:11px}
+.split{font-size:15px;color:var(--muted);margin-top:11px}
 .split b{color:var(--ink)}
 
 /* ------------------------------------------------------------ debt, notes */
 .note{background:#F1F7F5;border-left:3px solid var(--palo);border-radius:0 6px 6px 0;
-  padding:9px 11px;font-size:13.5px;color:var(--ink);margin-top:9px}
+  padding:9px 11px;font-size:15px;color:var(--ink);margin-top:9px}
 .dlist{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
-.d{display:flex;justify-content:space-between;gap:12px;padding:9px 11px;font-size:14.5px;
+.d{display:flex;justify-content:space-between;gap:12px;padding:9px 11px;font-size:15px;
   border-bottom:1px solid var(--line)}
 .d:last-child{border-bottom:0}
 .d b{font-variant-numeric:tabular-nums}
 .d.tot{background:#F7F9F9;font-weight:700}
 .d.col{display:block}
-.d.col b{display:block;font-size:14.5px}
-.d.col span{display:block;font-size:13px;color:var(--muted);margin-top:2px}
-.lab{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+.d.col b{display:block;font-size:15px}
+.d.col span{display:block;font-size:14.5px;color:var(--muted);margin-top:2px}
+.lab{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:var(--teal);margin:14px 0 7px}
 .lab.first{margin-top:0}
 .goallist{display:grid;gap:6px;margin-bottom:14px}
@@ -167,7 +167,7 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
   border-bottom:1px solid var(--line)}
 .b b{font-variant-numeric:tabular-nums}
 .b.big{background:var(--navy);color:#fff;border-bottom:0;align-items:center}
-.b.big span{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.b.big span{font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
 .b.big b{font-family:var(--serif);font-size:26px;font-weight:900}
 .b.big.over b,.b.big.over span{color:var(--ochre)}
 .b.big.over span{opacity:1}
