@@ -194,6 +194,11 @@ select.in{appearance:none;background:url("data:image/svg+xml;utf8,<svg xmlns='ht
 .b.big.over b,.b.big.over span{color:var(--ochre)}
 .b.big.over span{opacity:1}
 .acts{margin-top:14px}
+/* only appears if the clipboard call was refused, which some embeds do */
+.copybox{display:block;width:100%;margin-top:10px;padding:10px;font:13px/1.45 ui-monospace,
+  SFMono-Regular,Menlo,monospace;color:var(--ink);background:#fff;
+  border:1.5px solid var(--line);border-radius:8px;resize:vertical}
+.copybox[hidden]{display:none}
 .btn{background:var(--palo);color:#fff;border:0;border-radius:9px;padding:12px 20px;
   font-size:15px;font-weight:700;min-height:46px}
 .btn:hover{background:var(--dark-palo)}

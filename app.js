@@ -336,16 +336,6 @@ function render() {
       ${stepHead(6, 'tot-saving')}
       <p class="help">Saving beyond the emergency fund. Retirement, a down payment, a car,
         etc.</p>
-      ${(() => {
-        const used = state.saving.map((r) => r.label.trim().toLowerCase());
-        const spare = state.goals.map((g) => g.trim())
-          .filter((g) => g && !used.includes(g.toLowerCase()));
-        return spare.length ? `<div class="ideas">
-          <p class="lab first">Add one of your goals</p>
-          <div class="chips">${spare.map((g) =>
-            `<button class="chip" data-goalpick="${esc(g)}">${esc(g)}</button>`).join('')}</div>
-        </div>` : '';
-      })()}
       ${state.saving.map(savingRow).join('')}
       <button class="add" data-sadd="1">+ add a line</button>
     </section>
@@ -466,24 +456,15 @@ function bottom(pos) {
     ${say ? `<p class="note">${say}</p>` : ''}
     <div class="acts">
       <div class="actrow">
-        <button class="btn" id="csvit">Download my budget</button>
-        <button class="btn ghost" id="printit">Save as PDF</button>
+        <button class="btn" id="copyit">Copy my budget</button>
       </div>
-      <p class="help">The download is a spreadsheet, so you can keep editing it next month
-        rather than starting again. Nothing here is saved or sent anywhere, so take a copy
-        if you want one. Come back and adjust it as your life changes.</p>
+      <textarea id="copybox" class="copybox" readonly hidden rows="8"
+        aria-label="Your budget as text"></textarea>
+      <p class="help">Copy it and paste it wherever you keep notes, or send it to yourself.
+        Nothing here is saved or sent anywhere, so take a copy if you want one. Come back and
+        adjust it as your life changes.</p>
     </div>`;
 }
-
-/* A spreadsheet, not a document. The point of CSV over a PDF is that the budget
-   stays editable: change a number next month rather than starting again.
-   Raw numbers, no currency symbols or thousands separators, so Excel and Sheets
-   parse them as numbers instead of text. */
-const csvCell = (v) => {
-  const t = String(v ?? '');
-  return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
-};
-const round2 = (n) => Math.round(n * 100) / 100;
 
 /* Every prefilled label is sentence case, so a typed one should be too. Only
    the first letter, and only when the second is not already a capital, which
@@ -501,67 +482,90 @@ function capOnBlur(el, write) {
   });
 }
 
-function asCsv() {
+/* Mighty's iframe blocks both downloads and the print dialog. Confirmed by
+   testing: the same page served directly does both fine. We cannot change the
+   frame, so the only way out is something that needs no file and no dialog.
+
+   Copy works on a user gesture without any permission, and on a phone "paste it
+   into Notes" is a reasonable way to keep something. If even that is blocked,
+   the text drops into a selectable box so it can be copied by hand. */
+function asText() {
   const t = incomeTotals(), sp = expSplit(), pos = position(), dbt = debtTotal();
-  const rows = [['Section', 'Category', 'Item', 'Amount entered', 'How often', 'Monthly']];
-  const push = (...r) => rows.push(r);
+  const L = [], row = (k, v, pad = '') => L.push(`${pad}${k}: ${v}`);
+  const gs = state.goals.map((g) => g.trim()).filter(Boolean);
 
-  state.goals.map((g) => g.trim()).filter(Boolean)
-    .forEach((g) => push('Goals', '', g, '', '', ''));
+  L.push('BUDGET SHEET');
+  L.push(new Date().toLocaleDateString(undefined,
+    { year:'numeric', month:'long', day:'numeric' }));
 
+  if (gs.length) { L.push('', 'GOALS'); gs.forEach((g) => L.push(`  ${g}`)); }
+
+  L.push('', 'MONEY IN');
   state.income.forEach((r) => {
     if (!incRowMonthly(r)) return;
     const f = freqBy(r.freq);
-    push('Money in', '', r.label || 'Income',
-      r.varies ? num(r.low) : num(r.amount),
-      f.label + (r.varies ? ' (varies, low end)' : ''), round2(incRowMonthly(r)));
+    row(r.label || 'Income', `${usd(incRowMonthly(r))} a month`
+      + (r.varies ? ` (varies, ${usd(num(r.low))} to ${usd(num(r.high))} per ${f.noun})` : ''), '  ');
   });
-  push('Money in', '', 'Total in', '', '', round2(t.plan));
+  row('Total in', `${usd(t.plan)} a month`, '  ');
 
+  L.push('', 'MONEY OUT');
   state.groups.forEach((g) => {
+    if (!groupTotal(g)) return;
+    row(g.name, `${usd(groupTotal(g))} a month`, '  ');
     g.lines.forEach((l) => {
       if (!lineMonthly(l)) return;
-      push('Money out', g.name, l.label, num(l.amount),
-        expFreqBy(l.freq).long, round2(lineMonthly(l)));
+      row(l.label, usd(lineMonthly(l)) + (l.freq !== 'monthly'
+        ? ` a month (${usd(num(l.amount))} ${expFreqBy(l.freq).long})` : ''), '    ');
     });
-    if (groupTotal(g)) push('Money out', g.name, 'Subtotal', '', '', round2(groupTotal(g)));
   });
-  push('Money out', '', 'Total out', '', '', round2(expTotal()));
-  push('Money out', '', 'Of which fixed', '', '', round2(sp.fixed));
-  push('Money out', '', 'Of which variable', '', '', round2(sp.varies));
+  row('Total out', `${usd(expTotal())} a month`, '  ');
+  if (expTotal()) L.push(`  Of that, ${usd(sp.fixed)} is fixed and ${usd(sp.varies)} varies.`);
 
-  debtLines().forEach((l) => push('Debt payments', '', l.label, '', '', round2(l.amount)));
   if (dbt) {
-    push('Debt payments', '', 'Total debt payments', '', '', round2(dbt));
-    if (t.plan) push('Debt payments', '', 'Share of income', '', '',
-      Math.round((dbt / t.plan) * 100) + '%');
+    L.push('', 'DEBT PAYMENTS');
+    debtLines().forEach((l) => row(l.label, usd(l.amount), '  '));
+    row('A month toward debt', usd(dbt), '  ');
+    if (t.plan) L.push(`  ${Math.round((dbt / t.plan) * 100)}% of income is going toward debt.`);
   }
 
-  if (num(state.emergency)) push('Saving', '', 'Emergency saving', '', '', round2(num(state.emergency)));
-  state.saving.forEach((r) => {
-    if (num(r.amount)) push('Saving', '', r.label || 'Saving', '', '', round2(num(r.amount)));
-  });
-  if (savingTotal()) push('Saving', '', 'Total saving', '', '', round2(savingTotal()));
+  if (savingTotal()) {
+    L.push('', 'SAVING');
+    if (num(state.emergency)) row('Emergency saving', `${usd(num(state.emergency))} a month`, '  ');
+    state.saving.forEach((r) => {
+      if (num(r.amount)) row(r.label || 'Saving', `${usd(num(r.amount))} a month`, '  ');
+    });
+    row('Total saving', `${usd(savingTotal())} a month`, '  ');
+  }
 
-  push('Summary', '', pos.label, '', '', round2(left()));
-
-  return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+  L.push('', pos.label.toUpperCase(), `  ${usd(Math.abs(left()))} a month`);
+  L.push('', 'Nothing was saved or sent anywhere. Pinecone by Stanford.');
+  return L.join('\n');
 }
 
-function downloadCsv() {
-  const d = new Date();
-  const name = 'pinecone-budget-' + d.toISOString().slice(0, 10) + '.csv';
-  /* the BOM makes Excel open UTF-8 correctly instead of mangling it */
-  const blob = new Blob(['\uFEFF' + asCsv()], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+function copyBudget(btn) {
+  const text = asText();
+  const box = $('copybox');
+  const done = (ok) => {
+    btn.textContent = ok ? 'Copied' : 'Copy my budget';
+    if (!ok) { box.value = text; box.hidden = false; box.focus(); box.select(); }
+    if (ok) setTimeout(() => { btn.textContent = 'Copy my budget'; }, 2200);
+  };
+  /* execCommand on a hidden field needs no permission and survives frames that
+     block the async clipboard API */
+  const legacy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    done(ok);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => done(true), legacy);
+  } else legacy();
 }
 
 /* ----------------------------------------------------------------- wiring */
@@ -599,12 +603,11 @@ function bind() {
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-iadd],[data-irm],[data-ivar],[data-ladd],[data-lrm],'
     + '[data-sadd],[data-srm],[data-gladd],[data-glrm],[data-gopen],[data-allcats],'
-    + '[data-info],[data-ideas],[data-ex],[data-closeall],[data-goalpick],[data-hl],'
-    + '#printit,#csvit');
+    + '[data-info],[data-ideas],[data-ex],[data-closeall],[data-hl],'
+    + '#copyit');
   if (!el) return;
   const d = el.dataset;
-  if (el.id === 'printit') { window.print(); return; }
-  if (el.id === 'csvit') { downloadCsv(); return; }
+  if (el.id === 'copyit') { copyBudget(el); return; }
   if (d.info) { state.openInfo = state.openInfo === d.info ? null : d.info; }
   else if (d.ideas) { state.showIdeas = !state.showIdeas; }
   else if (d.ex !== undefined) {
@@ -626,11 +629,6 @@ document.addEventListener('click', (e) => {
     state.highlight = state.highlight === d.hl ? null : d.hl;
     /* no point marking lines inside a closed card */
     if (state.highlight) { state.openAll = true; state.groups.forEach((g) => { g.open = true; }); }
-  }
-  else if (d.goalpick) {
-    const blank = state.saving.find((r) => !r.label.trim() && !num(r.amount));
-    if (blank) blank.label = d.goalpick;
-    else state.saving.push({ label: d.goalpick, amount: '' });
   }
   else if (d.closeall) {
     state.openAll = false;
